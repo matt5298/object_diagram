@@ -51,6 +51,12 @@ class Pointer_Mode:
         # id or tagName. used as keyname to retrieve correct value from _drag_data dictionary
         self._mode = "id"
         self._drag_data = {"x": 0, "y": 0, "id": None, "tagName": None}
+        # need to setup the public methods
+        # always present the functions: select, move, drop
+        # if they need to be modified then overwrite in an inherited
+        # class or there may be an intern function that can be set 
+        # to one of these functions.
+        self.drop = self._drop_def
 
     def select(self, event):
         """Begining drag of a group"""
@@ -60,6 +66,9 @@ class Pointer_Mode:
         self._drag_data['tagName'] = self._getObjectNameTag(self._drag_data['id'])
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
+        #raise it to the topmost in the canvas
+        self.myCanvas.tag_raise(self._drag_data[self._mode], 'all')
+
         print('Pointer mode: {}'.format(self._mode))
 
     def move(self, event):
@@ -73,20 +82,74 @@ class Pointer_Mode:
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
 
-    def drop(self, event):
+    def _drop_def(self, event):
         """End drag of an object"""
+        # no action taken, default drop
         # reset the drag information
         self._drag_data["id"] = None
         self._drag_data["item"] = None
         self._drag_data["x"] = 0
         self._drag_data["y"] = 0
 
+    def drop(self, event):
+        pass
+
+    def _drop_move(self, event):
+        """End drag of an object"""
+        print('!!!!!Ending move and dropping!!!!!')
+        # get the source object according to the _mode
+        source = self._drag_data[self._mode]
+
+        # add the tag source to mark the group
+        # later the name tag is removed so need something to mark it
+        self.myCanvas.addtag_withtag( 'source', source)
+        print ('Source object tags: {}'.format(self.myCanvas.gettags('source')))
+
+        # find object below the moved item
+        # returns the item below in the order, not in relation to where it is on the canvas
+        #target = self.myCanvas.find_below(self._drag_data['item'])
+
+        # get the item that intersects with the bounding box of the dragged item
+        bboxSource = self.myCanvas.bbox(source)
+        print (bboxSource)
+        x1,y1,x2,y2 = bboxSource
+        # The dragging object, source has been moved to the front on drag start
+        # that means the target will always be below it. [0] will be the bottom of the overlapping objects returned
+        # this returns the id of the target no matter what the _mode is set to
+        target = self.myCanvas.find_overlapping(x1,y1,x2,y2)[0]
+
+        print ('Drop x,y: {},{}'.format(event.x, event.y))
+        print ('Target item: {}'.format(target,))
+
+        # get it's tag name
+
+        tagTarget = self._getObjectNameTag(target)
+        print ('Target tag: {}'.format(tagTarget,))
+
+        # change the tag name that's in the _drag_data item 
+        
+        
+        # delete the original Name tag for the source object, the one dragged
+        print ('Deleting from {}, tag {}'.format(source,self._getObjectNameTag(source)))
+        self.myCanvas.dtag(source,self._getObjectNameTag(source))
+        # add the new Name tag to the source object to group it with the object dropped on
+        # need to use the 'source' tag because the Name tag that's in the source variable no longer exists.
+        self.myCanvas.addtag_withtag( tagTarget, 'source')
+        print ('Adding to source {}, target tag {}'.format( source, tagTarget))
+        print(self.myCanvas.gettags(self._drag_data[self._mode]))
+        # reset the drag information
+        self._drag_data["id"] = None
+        self._drag_data["item"] = None
+        self._drag_data["x"] = 0
+        self._drag_data["y"] = 0
+
+
     def _getObjectNameTag(self, id):
-            print ('the id: {}'.format(id))
+            #print ('the id: {}'.format(id))
             tags = self.myCanvas.gettags(id)
             # find the Name tag.  This will identify the group of items to move.
             tagName = [tg for tg in tags if tg.find('Name')>-1]
-            print ('The id and name tag are: {},{}'.format(id, tagName[0],))
+            #print ('The id and name tag are: {},{}'.format(id, tagName[0],))
             return tagName[0]
 
     def get_Object(self):
@@ -101,6 +164,19 @@ class Pointer_mode_group(Pointer_Mode):
         # id or tagName
         self._mode = "tagName"
         self._drag_data = {"x": 0, "y": 0, "id": None, "tagName": None}
+        self.drop = self._drop_def
+
+class Pointer_mode_group_move(Pointer_Mode):
+    def __init__(self, myCanvas):
+        self.name = "Pointer Group Move"
+        self.myCanvas = myCanvas        
+        # which identifier out of _drag_data will be used
+        # id or tagName (for group)
+        self._mode = "tagName"
+        self._drag_data = {"x": 0, "y": 0, "id": None, "tagName": None}
+        # set to the correct method
+        self.drop = self._drop_move
+
 
 class Pointer_mode_id(Pointer_Mode):
     def __init__(self, myCanvas):
@@ -110,6 +186,19 @@ class Pointer_mode_id(Pointer_Mode):
         # id or tagName
         self._mode = "id"
         self._drag_data = {"x": 0, "y": 0, "id": None, "tagName": None}
+        self.drop = self._drop_def
+
+class Pointer_mode_id_move(Pointer_Mode):
+    def __init__(self, myCanvas):
+        self.name = "Pointer Id Move"
+        self.myCanvas = myCanvas        
+        # which identifier out of _drag_data will be used
+        # id or tagName
+        self._mode = "id"
+        self._drag_data = {"x": 0, "y": 0, "id": None, "tagName": None}
+        # set to the correct method
+        self.drop = self._drop_move
+
 
 
 class AppWindow():
@@ -157,48 +246,16 @@ class AppWindow():
 
     
     def drag_stop_move(self, event):
-        """End drag of an object"""
-        print('Ending move and dropping')
-        source = self._drag_data['item']
-        # find object at location of the drop
-        #target = self.myCanvas.find_closest(event.x, event.y)[1]
-        
-        # find object below the moved item
-        # returns the item below in the order, not in relation to where it is on the canvas
-        #target = self.myCanvas.find_below(self._drag_data['item'])
-
-        # get the item that intersects with the bounding box of the dragged item
-        bboxSource = self.myCanvas.bbox(source)
-        print (bboxSource)
-        x1,y1,x2,y2 = bboxSource
-        # The dragging object, source has been moved to the front on drag stop
-        # that means the target will always be below it. [0] will be the bottom of the overlapping objects returned
-        target = self.myCanvas.find_overlapping(x1,y1,x2,y2)[0]
-
-        print ('Drop x,y: {},{}'.format(event.x, event.y))
-        print ('Target item: {}'.format(target,))
-
-        # get it's tag name
-        tagTarget = self.getObjectNameTag(target)
-        print ('Target tag: {}'.format(tagTarget,))
-
-        # change the tag name that's in the _drag_data item 
-        # assuming that pointer mode is id
-        # delete the original Name tag for the source object, the one dragged
-        self.myCanvas.dtag(source,self.getObjectNameTag(source))
-        # add the new Name tag to the source object to group it with the object dropped on
-        self.myCanvas.addtag_withtag( tagTarget, self._drag_data["item"])
-        print(self.myCanvas.gettags(self._drag_data["item"]))
-        # reset the drag information
-        self._drag_data["item"] = None
-        self._drag_data["x"] = 0
-        self._drag_data["y"] = 0
-
+            pass
 
     def change_pointer_mode(self):
         if self._pointer.name == 'Pointer Group':
             self._pointer = Pointer_mode_id(self.myCanvas)
         elif self._pointer.name == 'Pointer Id':
+            self._pointer = Pointer_mode_id_move(self.myCanvas)
+        elif self._pointer.name == 'Pointer Id Move':
+            self._pointer = Pointer_mode_group_move(self.myCanvas)
+        elif self._pointer.name == 'Pointer Group Move':
             self._pointer = Pointer_mode_group(self.myCanvas)
 
         self.setBindings()
