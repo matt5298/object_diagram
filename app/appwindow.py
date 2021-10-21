@@ -22,16 +22,19 @@
 # To do
     # display all tags from all objects on the canvas in a compound object
 
-# to do
+# To do
     # to create a compound object
     # have _id_background: the is also the lowest member because all other objects will be .tag_raise(<this group tag>, <background id>)
-    # have the count of member objects
-    # _add_object(): to add an object and put it in the correct display number
+    # have the count of member objects, array of member object ids
+    # add_object(): to add an object to the compound object
     # tag_object(): to add a tag to all objects in the object
-    # remove_object(): to remove the object tag from the object.
+    # remove_object(): to remove the object from the compound object
     # to readjust all elements position in the display list use .tag_raise(<this group tag>, <background id>)
-    # add new text item to the object
-    # have object able to be hidden and shown.  Use tags to designate hidden and shown items.
+    # drag_Start(): add the tag _drag to the compound object bind ButtonPress-1
+    # drag_Move(): move the object according to the delta.  This should be bound to the B1-Motion
+    # drop_Target(): add the tag _drop_target to the compound object bind ButtonRelease-1
+    # create new text item in the compound object
+    # show(): to show or hide the compound object
     # have app tags that are prefixed with _
     # have a right click function display a context sensitive menu
 
@@ -39,14 +42,13 @@
     # detection of collisions happens with the background object
     # detection of overlaps can happen with the background object, and/or with the component objects
     
-
 # v0.05
     # currently I have the dragging and dropping working in the following manner
         # the mode is id or sourceNameTag
         # added to _drag_data, sourceNameTag, sourceIndex (the location in the display list)
         # in pointer.select() get the sourceIndex for the lowest item in the id or sourceNameTag
         # in pointer._drop_def() return the item to it's location which is below the item currently in sourceIndex of display list
-        # have not implemented in pointer._drop_move()
+        # have updated pointer._drop_move() but it has bugs.
             # bugs in the pointer._drop_move for pointer id move mode.  haven't tested pointer group move mode.
 
     #Todo
@@ -113,7 +115,10 @@ class Pointer_Mode:
         # sourceNameTag is the name tag that is for the object clicked on
         # targetNameTag is the name tag of the drop target
         # displayListStart is the 
-        self._drag_data = {"x": 0, "y": 0, "id":None, "sourceNameTag":None, "targetNameTag":None, "sourceIndex":None}
+
+        #get blank drag data data structure
+        self._drag_data = self.createDragData()
+
         # tag that will be used to mark the item(s) being dragged
         self._drag_source = '_Source'
         # marks the item that is the target in a drag and drop
@@ -125,6 +130,9 @@ class Pointer_Mode:
         # class or there may be an intern function that can be set 
         # to one of these functions.
         self.drop = self._drop_def
+
+    def createDragData(self):
+        return {"x": 0, "y": 0, "id":None, "sourceNameTag":None, "targetNameTag":None, "sourceIndex":None}
 
     def select(self, event):
         """Begining drag of a group"""
@@ -177,10 +185,7 @@ class Pointer_Mode:
         print('After replacing: {}'.format(self.myCanvas.find_all()))
 
         # reset the drag information
-        self._drag_data["id"] = None
-        self._drag_data["item"] = None
-        self._drag_data["x"] = 0
-        self._drag_data["y"] = 0
+        self._drag_data = self.createDragData()
 
     def drop(self, event):
         pass

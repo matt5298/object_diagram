@@ -8,6 +8,7 @@ import uuid
 class ZObject:
     def __init__(self, name=''):
         # create a data structure for the object
+        # this is only to initialize a new object.  If it's matched to a data source it would have to retrieve the data
         self.data = {}
         self.data['uuid'] = uuid.uuid4().bytes
         if len(name) > 0:
