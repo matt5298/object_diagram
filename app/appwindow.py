@@ -110,14 +110,12 @@ class Pointer_Mode:
         # which identifier out of _drag_data will be used
         # id or tagName. used as keyname to retrieve correct value from _drag_data dictionary
         self._mode = "id"
-        # sourceNameTag is the name tag that is for the object clicked on
-        # targetNameTag is the name tag of the drop target
-        # displayListStart is the 
-        self._drag_data = {"x": 0, "y": 0, "id":None, "sourceNameTag":None, "targetNameTag":None, "sourceIndex":None}
         # tag that will be used to mark the item(s) being dragged
         self._drag_source = '_Source'
         # marks the item that is the target in a drag and drop
         self._drag_target = '_Target'
+
+        self.reset_drag_data()
 
         # need to setup the public methods
         # always present the functions: select, move, drop
@@ -125,6 +123,13 @@ class Pointer_Mode:
         # class or there may be an intern function that can be set 
         # to one of these functions.
         self.drop = self._drop_def
+    
+    def reset_drag_data(self):
+        # sourceNameTag is the name tag that is for the object clicked on
+        # targetNameTag is the name tag of the drop target
+        # displayListStart is the 
+        self._drag_data = {"x": 0, "y": 0, "id":None, "sourceNameTag":None, "targetNameTag":None, "sourceIndex":None}
+
 
     def select(self, event):
         """Begining drag of a group"""
@@ -137,7 +142,7 @@ class Pointer_Mode:
         self._drag_data["y"] = event.y
         #get the location in the display list of the current item based on _mode
         # this is the index of the item in the list of all items.
-        
+        print("Current select mode: " + self._mode + ", tag/id: " + str(self._drag_data[self._mode]) )
         # get array of items in canvas with the tag or id
         items = self.myCanvas.find_all()
         # the first item in the find_withtag(tag or id) returned array is the lowest one in the display list.  
@@ -150,6 +155,7 @@ class Pointer_Mode:
         self.myCanvas.tag_raise(self._drag_data[self._mode], 'all')
 
         #print('Pointer mode: {}'.format(self._mode))
+        print('Selected item tags: ' + str(self.myCanvas.gettags(self._drag_data[self._mode])))
 
     def move(self, event):
         """Handle dragging of a group"""
@@ -166,7 +172,7 @@ class Pointer_Mode:
         """End drag of an object"""
         # return the item to it's place in the display
         # acts on the tags of the selected item.
-        print('Before replacing: {}'.format(self.myCanvas.find_all()))
+        # print('Before replacing: {}'.format(self.myCanvas.find_all()))
         
         # get all the items from which we can get the item at the index of sourceIndex
         items = self.myCanvas.find_all()
@@ -174,13 +180,9 @@ class Pointer_Mode:
         #this will place the item to where it was befor.  If _mode = id then only the one item moves
         #if _mode=sourceNameTag then all items with that tag will be moved and maintain their relative locations.
         self.myCanvas.tag_lower(self._drag_data[self._mode],items[self._drag_data['sourceIndex']])
-        print('After replacing: {}'.format(self.myCanvas.find_all()))
+        #print('After replacing: {}'.format(self.myCanvas.find_all()))
 
-        # reset the drag information
-        self._drag_data["id"] = None
-        self._drag_data["item"] = None
-        self._drag_data["x"] = 0
-        self._drag_data["y"] = 0
+        self.reset_drag_data()
 
     def drop(self, event):
         pass
@@ -188,12 +190,12 @@ class Pointer_Mode:
     def _drop_move(self, event):
         """End drag of an object"""
         print('!!!!!Ending move and dropping!!!!!')
-        # get the source object according to the _mode
+        # get the source tag/id according to the _mode
         source = self._drag_data[self._mode]
 
-        # add the tag source to mark the group
+        # add the tag source1 to mark the group
         # later the name tag is removed so need something to mark it
-        self.myCanvas.addtag_withtag( 'source', source)
+        self.myCanvas.addtag_withtag( 'source1', source)
         print ('Source object tags: {}'.format(self.myCanvas.gettags('source')))
 
         # find object below the moved item
@@ -225,14 +227,13 @@ class Pointer_Mode:
         self.myCanvas.dtag(source,self._getObjectNameTag(source))
         # add the new Name tag to the source object to group it with the object dropped on
         # need to use the 'source' tag because the Name tag that's in the source variable no longer exists.
-        self.myCanvas.addtag_withtag( tagTarget, 'source')
-        print ('Adding to source {}, target tag {}'.format( 'source', tagTarget))
+        self.myCanvas.addtag_withtag( tagTarget, 'source1')
+        print ('Adding to source {}, target tag {}'.format( 'source1', tagTarget))
+        # remove the source1 tag from all objects that contain source1
+        self.myCanvas.dtag('source1','source1')
         print(self.myCanvas.gettags(self._drag_data[self._mode]))
         # reset the drag information
-        self._drag_data["id"] = None
-        self._drag_data["item"] = None
-        self._drag_data["x"] = 0
-        self._drag_data["y"] = 0
+        self.reset_drag_data()
 
     def _getObjectTagStartWith(self, id, startWith):
             # this is to return the tag that startWith
